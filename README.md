@@ -1,6 +1,14 @@
 Watchman builder
 
 # Installation
+To work with private repos you need to allow them:
+
+Add to your rc-file (.bashrc or .zshrc or similar):
+```shell
+export GOPRIVATE=github.com/sensority-labs/*
+export PATH=$PATH:$HOME/go/bin
+```
+Then install binary:
 ```bash
 go install github.com/sensority-labs/builder/cmd/watchman-builder@latest
 ```
