@@ -36,8 +36,10 @@ func buildWatchman(cradlePath, networkName, natsURL string) http.HandlerFunc {
 			}
 		}(file)
 
-		log.Default().Println("Uploaded File: ", handler.Filename)
-		log.Default().Println("File Size: ", handler.Size)
+		log.Default().Println("Received new bot code:")
+		log.Default().Println("Received file: ", handler.Filename)
+		log.Default().Println("File size: ", handler.Size)
+		log.Default().Println("Extracting...")
 
 		// Create a temporary file within our temp-images directory that follows a particular pattern.
 		tempFile, err := os.CreateTemp(cradlePath, "*.tar.gz")
@@ -69,13 +71,17 @@ func buildWatchman(cradlePath, networkName, natsURL string) http.HandlerFunc {
 			return
 		}
 
+		log.Default().Println("Bot code extracted. Building docker image...")
+
 		dc, err := docker.NewClient()
 		if err != nil {
+			log.Default().Println(fmt.Sprintf("Error: %+v", err))
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		defer func(dockerClient *docker.Client) {
 			if err := dockerClient.Close(); err != nil {
+				log.Default().Println(fmt.Sprintf("Error: %+v", err))
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -84,6 +90,7 @@ func buildWatchman(cradlePath, networkName, natsURL string) http.HandlerFunc {
 		// Build the cradle with a docker client
 		imageName := repoName + ":latest"
 		if err := dc.BuildImage(cradlePath, imageName); err != nil {
+			log.Default().Println(fmt.Sprintf("Error: %+v", err))
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -91,6 +98,7 @@ func buildWatchman(cradlePath, networkName, natsURL string) http.HandlerFunc {
 		containerName := repoName // We'll define a proper container name later
 		containerId, err := dc.RunContainer(imageName, containerName, networkName, natsURL)
 		if err != nil {
+			log.Default().Println(fmt.Sprintf("Error: %+v", err))
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -99,6 +107,7 @@ func buildWatchman(cradlePath, networkName, natsURL string) http.HandlerFunc {
 
 		// Return the container ID
 		if _, err := fmt.Fprintf(w, containerId); err != nil {
+			log.Default().Println(fmt.Sprintf("Error: %+v", err))
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
