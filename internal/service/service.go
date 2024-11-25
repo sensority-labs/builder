@@ -161,11 +161,15 @@ func Run() error {
 	if natsURL == "" {
 		natsURL = "nats://nats:4222"
 	}
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "5005"
+	}
 
 	// Setup server
 	http.HandleFunc("/build/{repoName}", buildWatchman(cradlePath, networkName, natsURL))
 
 	// Start the server
 	log.Default().Println("Server started at :8000")
-	return http.ListenAndServe(":8000", nil)
+	return http.ListenAndServe(fmt.Sprintf(":%s", port), nil)
 }

@@ -17,6 +17,7 @@ go install github.com/sensority-labs/builder/cmd/watchman-builder@latest
 Env params:
 - `NETWORK_NAME` - docker network name to connect to. Default is `sensority-labs`
 - `NATS_URL` - nats url to connect to. Default is `nats://nats:4222`
+- `PORT` - port to listen on. Default is `5005`
 
 With defaults:
 ```bash
