@@ -170,6 +170,6 @@ func Run() error {
 	http.HandleFunc("/build/{repoName}", buildWatchman(cradlePath, networkName, natsURL))
 
 	// Start the server
-	log.Default().Println("Server started at :8000")
+	log.Default().Println("Server started at :" + port)
 	return http.ListenAndServe(fmt.Sprintf(":%s", port), nil)
 }
