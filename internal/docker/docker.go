@@ -3,6 +3,7 @@ package docker
 import (
 	"context"
 	"io"
+	"log"
 	"slices"
 
 	"github.com/docker/docker/api/types"
@@ -37,6 +38,7 @@ func (c *Client) BuildImage(srcCodePath, imageName string) error {
 	if err != nil {
 		return err
 	}
+	log.Default().Printf("Building image %s\n", imageName)
 	if _, err := c.cl.ImageBuild(context.Background(), dockerContext, types.ImageBuildOptions{Tags: []string{imageName}}); err != nil {
 		return err
 	}
@@ -54,6 +56,7 @@ func (c *Client) RunContainer(imageName, containerName, networkName, natsURL str
 		return container.Names[0] == "/"+containerName
 	}) {
 		// Remove old container
+		log.Default().Printf("Removing old container %s\n", containerName)
 		if err := c.cl.ContainerRemove(context.Background(), containerName, container.RemoveOptions{Force: true}); err != nil {
 			return "", err
 		}
@@ -70,11 +73,14 @@ func (c *Client) RunContainer(imageName, containerName, networkName, natsURL str
 			networkName: {},
 		},
 	}
+	log.Default().Printf("Creating container %s from image: %s\n", containerName, imageName)
 	cnt, err := c.cl.ContainerCreate(context.Background(), containerConfig, nil, networkConfig, nil, containerName)
 	if err != nil {
 		return "", err
 	}
 
+	// Start the container
+	log.Default().Printf("Starting container %s\n", containerName)
 	if err := c.cl.ContainerStart(context.Background(), cnt.ID, container.StartOptions{}); err != nil {
 		return "", err
 	}

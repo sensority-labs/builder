@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/sensority-labs/builder/internal/config"
@@ -39,7 +40,7 @@ func getCradle(cradlePath, ghToken string) error {
 
 func Run(cfg *config.Config) error {
 	tmpDir := os.TempDir()
-	cradlePath := tmpDir + "cradle-ts"
+	cradlePath := path.Join(tmpDir, "cradle-ts")
 	if err := getCradle(cradlePath, cfg.GithubToken); err != nil {
 		return err
 	}
