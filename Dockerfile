@@ -1,5 +1,5 @@
 # Use the official Golang image to create a build artifact.
-FROM golang:1.20 AS builder
+FROM golang:1.23 AS builder
 
 # Set the Current Working Directory inside the container
 WORKDIR /app
@@ -29,4 +29,4 @@ COPY --from=builder /app/bot-builder .
 EXPOSE 5005
 
 # Command to run the executable
-CMD ["./watchman-builder"]
+CMD ["./bot-builder"]
