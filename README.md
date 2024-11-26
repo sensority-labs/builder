@@ -10,7 +10,7 @@ export PATH=$PATH:$HOME/go/bin
 ```
 Then install binary:
 ```bash
-go install github.com/sensority-labs/builder/cmd/watchman-builder@latest
+go install github.com/sensority-labs/builder/cmd/bot-builder@latest
 ```
 
 # Usage
@@ -26,5 +26,5 @@ watchman-builder
 
 With custom settings:
 ```bash
-NETWORK_NAME=watchman-builder-network NATS_URL=nats://localhost:4222 watchman-builder
+NETWORK_NAME=watchman-builder-network NATS_URL=nats://localhost:4222 bot-builder
 ```
