@@ -6,6 +6,7 @@ import (
 )
 
 type Config struct {
+	Debug       bool
 	GithubToken string
 	NetworkName string
 	NatsURL     string
@@ -13,6 +14,8 @@ type Config struct {
 }
 
 func GetConfig() (*Config, error) {
+	debug := os.Getenv("DEBUG") == "true"
+
 	githubToken := os.Getenv("GITHUB_TOKEN")
 	if githubToken == "" {
 		return nil, fmt.Errorf("GITHUB_TOKEN is not set")
@@ -31,6 +34,7 @@ func GetConfig() (*Config, error) {
 	}
 
 	return &Config{
+		Debug:       debug,
 		GithubToken: os.Getenv("GITHUB_TOKEN"),
 		NetworkName: networkName,
 		NatsURL:     natsURL,

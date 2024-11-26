@@ -13,5 +13,9 @@ func main() {
 		log.Fatal(err)
 	}
 
+	if cfg.Debug {
+		log.Default().Printf("Run bot-builder with config: %+v", cfg)
+	}
+
 	log.Fatal(service.Run(cfg))
 }
