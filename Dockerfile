@@ -19,6 +19,8 @@ RUN go build -o bot-builder ./cmd/bot-builder
 # Start a new stage from scratch
 FROM debian:bookworm-slim
 
+RUN apt update && apt install -y ca-certificates && update-ca-certificates
+
 # Set the Current Working Directory inside the container
 WORKDIR /app/
 
