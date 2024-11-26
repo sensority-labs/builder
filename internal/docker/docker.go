@@ -5,9 +5,11 @@ import (
 	"io"
 	"log"
 	"slices"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/archive"
@@ -42,7 +44,25 @@ func (c *Client) BuildImage(srcCodePath, imageName string) error {
 	if _, err := c.cl.ImageBuild(context.Background(), dockerContext, types.ImageBuildOptions{Tags: []string{imageName}}); err != nil {
 		return err
 	}
-	return nil
+
+	// Wait until the image is available
+	for {
+		images, err := c.cl.ImageList(context.Background(), image.ListOptions{All: true})
+		if err != nil {
+			return err
+		}
+		if slices.ContainsFunc(images, func(img image.Summary) bool {
+			for _, tag := range img.RepoTags {
+				if tag == imageName {
+					return true
+				}
+			}
+			return false
+		}) {
+			return nil
+		}
+		time.Sleep(1 * time.Second)
+	}
 
 }
 

@@ -90,7 +90,7 @@ func buildWatchman(cradlePath, networkName, natsURL string) http.HandlerFunc {
 		// Build the cradle with a docker client
 		imageName := repoName + ":latest"
 		if err := dc.BuildImage(cradlePath, imageName); err != nil {
-			log.Default().Println(fmt.Sprintf("Error: %+v", err))
+			log.Default().Println(fmt.Sprintf("Error building image: %+v", err))
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -98,7 +98,7 @@ func buildWatchman(cradlePath, networkName, natsURL string) http.HandlerFunc {
 		containerName := repoName // We'll define a proper container name later
 		containerId, err := dc.RunContainer(imageName, containerName, networkName, natsURL)
 		if err != nil {
-			log.Default().Println(fmt.Sprintf("Error: %+v", err))
+			log.Default().Println(fmt.Sprintf("Error running container: %+v", err))
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
