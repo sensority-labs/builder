@@ -2,14 +2,14 @@ package docker
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"slices"
-	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/archive"
@@ -36,34 +36,41 @@ func (c *Client) Close() error {
 }
 
 func (c *Client) BuildImage(srcCodePath, imageName string) error {
+	log.Default().Printf("Building image %s\n", imageName)
+
 	dockerContext, err := getDockerContext(srcCodePath)
 	if err != nil {
 		return err
 	}
-	log.Default().Printf("Building image %s\n", imageName)
-	if _, err := c.cl.ImageBuild(context.Background(), dockerContext, types.ImageBuildOptions{Tags: []string{imageName}}); err != nil {
+
+	// Build the image
+	buildResponse, err := c.cl.ImageBuild(context.Background(), dockerContext, types.ImageBuildOptions{
+		Tags: []string{imageName},
+	})
+	if err != nil {
 		return err
 	}
+	defer func(Body io.ReadCloser) {
+		if err := Body.Close(); err != nil {
+			log.Default().Println(fmt.Sprintf("Error: %+v", err))
+		}
+	}(buildResponse.Body)
 
-	// Wait until the image is available
+	// Read the build output and print it to the console
+	decoder := json.NewDecoder(buildResponse.Body)
 	for {
-		images, err := c.cl.ImageList(context.Background(), image.ListOptions{All: true})
-		if err != nil {
+		var message map[string]interface{}
+		if err := decoder.Decode(&message); err == io.EOF {
+			break
+		} else if err != nil {
 			return err
 		}
-		if slices.ContainsFunc(images, func(img image.Summary) bool {
-			for _, tag := range img.RepoTags {
-				if tag == imageName {
-					return true
-				}
-			}
-			return false
-		}) {
-			return nil
-		}
-		time.Sleep(1 * time.Second)
-	}
 
+		if stream, ok := message["stream"]; ok {
+			fmt.Print(stream)
+		}
+	}
+	return nil
 }
 
 func (c *Client) RunContainer(imageName, containerName, networkName, natsURL string) (string, error) {
