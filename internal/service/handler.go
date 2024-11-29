@@ -10,10 +10,11 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/sensority-labs/builder/internal/config"
 	"github.com/sensority-labs/builder/internal/docker"
 )
 
-func buildWatchman(cradlePath, networkName, natsURL string) http.HandlerFunc {
+func buildWatchman(cradlePath string, cfg *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		botName := r.PathValue("botName")
 		customerName := r.PathValue("customerName")
@@ -97,7 +98,7 @@ func buildWatchman(cradlePath, networkName, natsURL string) http.HandlerFunc {
 		}
 
 		containerName := botName // We'll define a proper container name later
-		containerId, err := dc.RunContainer(imageName, containerName, networkName, natsURL, customerName, botName)
+		containerId, err := dc.RunContainer(cfg, imageName, containerName, customerName, botName)
 		if err != nil {
 			log.Default().Println(fmt.Sprintf("Error running container: %+v", err))
 			http.Error(w, err.Error(), http.StatusInternalServerError)

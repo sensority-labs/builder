@@ -13,6 +13,7 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/archive"
+	"github.com/sensority-labs/builder/internal/config"
 )
 
 type Client struct {
@@ -73,7 +74,7 @@ func (c *Client) BuildImage(srcCodePath, imageName string) error {
 	return nil
 }
 
-func (c *Client) RunContainer(imageName, containerName, networkName, natsURL, customerName, botName string) (string, error) {
+func (c *Client) RunContainer(cfg *config.Config, imageName, containerName, customerName, botName string) (string, error) {
 	// Check if a container already exists
 	containers, err := c.cl.ContainerList(context.Background(), container.ListOptions{All: true})
 	if err != nil {
@@ -92,12 +93,18 @@ func (c *Client) RunContainer(imageName, containerName, networkName, natsURL, cu
 	// Create a new container
 	containerConfig := &container.Config{
 		Image: imageName,
-		Env:   []string{"NATS_URL=" + natsURL, "CUSTOMER_NAME=" + customerName, "BOT_NAME=" + botName},
+		Env: []string{
+			"NATS_URL=" + cfg.Stream.NatsURL,
+			"EVENTS_STREAM_NAME=" + cfg.Stream.EventStreamName,
+			"FINDINGS_STREAM_NAME=" + cfg.Stream.FindingsStreamName,
+			"CUSTOMER_NAME=" + customerName,
+			"BOT_NAME=" + botName,
+		},
 	}
 	// Attach the container to the network
 	networkConfig := &network.NetworkingConfig{
 		EndpointsConfig: map[string]*network.EndpointSettings{
-			networkName: {},
+			cfg.Stream.NetworkName: {},
 		},
 	}
 	log.Default().Printf("Creating container %s from image: %s\n", containerName, imageName)

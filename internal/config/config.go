@@ -8,9 +8,15 @@ import (
 type Config struct {
 	Debug       bool
 	GithubToken string
-	NetworkName string
-	NatsURL     string
 	Port        string
+	Stream      StreamConfig
+}
+
+type StreamConfig struct {
+	NetworkName        string
+	NatsURL            string
+	EventStreamName    string
+	FindingsStreamName string
 }
 
 func GetConfig() (*Config, error) {
@@ -33,11 +39,24 @@ func GetConfig() (*Config, error) {
 		port = "5005"
 	}
 
+	eventStreamName := os.Getenv("EVENT_STREAM_NAME")
+	if eventStreamName == "" {
+		eventStreamName = "ethereum_events"
+	}
+	findingsStreamName := os.Getenv("FINDINGS_STREAM_NAME")
+	if findingsStreamName == "" {
+		findingsStreamName = "findings"
+	}
+
 	return &Config{
 		Debug:       debug,
 		GithubToken: os.Getenv("GITHUB_TOKEN"),
-		NetworkName: networkName,
-		NatsURL:     natsURL,
 		Port:        port,
+		Stream: StreamConfig{
+			NetworkName:        networkName,
+			NatsURL:            natsURL,
+			EventStreamName:    eventStreamName,
+			FindingsStreamName: findingsStreamName,
+		},
 	}, nil
 }
