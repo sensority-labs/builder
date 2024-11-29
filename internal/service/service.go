@@ -46,7 +46,7 @@ func Run(cfg *config.Config) error {
 	}
 
 	// Setup server
-	http.HandleFunc("/build/{repoName}", buildWatchman(cradlePath, cfg.NetworkName, cfg.NatsURL))
+	http.HandleFunc("/build/{customerName}/{botName}", buildWatchman(cradlePath, cfg.NetworkName, cfg.NatsURL))
 
 	// Start the server
 	log.Default().Println("Server started at :" + cfg.Port)

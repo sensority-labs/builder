@@ -15,7 +15,8 @@ import (
 
 func buildWatchman(cradlePath, networkName, natsURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		repoName := r.PathValue("repoName")
+		botName := r.PathValue("botName")
+		customerName := r.PathValue("customerName")
 
 		// Parse our multipart form, 10 << 20 specifies a maximum upload of 10 MB files.
 		if err := r.ParseMultipartForm(10 << 20); err != nil {
@@ -88,15 +89,15 @@ func buildWatchman(cradlePath, networkName, natsURL string) http.HandlerFunc {
 		}(dc)
 
 		// Build the cradle with a docker client
-		imageName := repoName + ":latest"
+		imageName := botName + ":latest"
 		if err := dc.BuildImage(cradlePath, imageName); err != nil {
 			log.Default().Println(fmt.Sprintf("Error building image: %+v", err))
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		containerName := repoName // We'll define a proper container name later
-		containerId, err := dc.RunContainer(imageName, containerName, networkName, natsURL)
+		containerName := botName // We'll define a proper container name later
+		containerId, err := dc.RunContainer(imageName, containerName, networkName, natsURL, customerName, botName)
 		if err != nil {
 			log.Default().Println(fmt.Sprintf("Error running container: %+v", err))
 			http.Error(w, err.Error(), http.StatusInternalServerError)

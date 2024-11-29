@@ -73,7 +73,7 @@ func (c *Client) BuildImage(srcCodePath, imageName string) error {
 	return nil
 }
 
-func (c *Client) RunContainer(imageName, containerName, networkName, natsURL string) (string, error) {
+func (c *Client) RunContainer(imageName, containerName, networkName, natsURL, customerName, botName string) (string, error) {
 	// Check if a container already exists
 	containers, err := c.cl.ContainerList(context.Background(), container.ListOptions{All: true})
 	if err != nil {
@@ -92,7 +92,7 @@ func (c *Client) RunContainer(imageName, containerName, networkName, natsURL str
 	// Create a new container
 	containerConfig := &container.Config{
 		Image: imageName,
-		Env:   []string{"NATS_URL=" + natsURL},
+		Env:   []string{"NATS_URL=" + natsURL, "CUSTOMER_NAME=" + customerName, "BOT_NAME=" + botName},
 	}
 	// Attach the container to the network
 	networkConfig := &network.NetworkingConfig{
