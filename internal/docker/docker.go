@@ -101,6 +101,12 @@ func (c *Client) RunContainer(cfg *config.Config, imageName, containerName, cust
 			"BOT_NAME=" + botName,
 		},
 	}
+	// HostConfig is used to configure the container to be attached to the network
+	hostConfig := &container.HostConfig{
+		RestartPolicy: container.RestartPolicy{
+			Name: container.RestartPolicyOnFailure,
+		},
+	}
 	// Attach the container to the network
 	networkConfig := &network.NetworkingConfig{
 		EndpointsConfig: map[string]*network.EndpointSettings{
@@ -108,7 +114,7 @@ func (c *Client) RunContainer(cfg *config.Config, imageName, containerName, cust
 		},
 	}
 	log.Default().Printf("Creating container %s from image: %s\n", containerName, imageName)
-	cnt, err := c.cl.ContainerCreate(context.Background(), containerConfig, nil, networkConfig, nil, containerName)
+	cnt, err := c.cl.ContainerCreate(context.Background(), containerConfig, hostConfig, networkConfig, nil, containerName)
 	if err != nil {
 		return "", err
 	}
