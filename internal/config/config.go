@@ -9,6 +9,7 @@ type Config struct {
 	Debug       bool
 	GithubToken string
 	Port        string
+	Bot         BotConfig
 	Stream      StreamConfig
 }
 
@@ -17,6 +18,10 @@ type StreamConfig struct {
 	NatsURL            string
 	EventStreamName    string
 	FindingsStreamName string
+}
+
+type BotConfig struct {
+	SentryDSN string
 }
 
 func GetConfig() (*Config, error) {
@@ -38,6 +43,7 @@ func GetConfig() (*Config, error) {
 	if port == "" {
 		port = "5005"
 	}
+	botsSentryDSN := os.Getenv("BOTS_SENTRY_DSN")
 
 	eventStreamName := os.Getenv("EVENT_STREAM_NAME")
 	if eventStreamName == "" {
@@ -52,6 +58,9 @@ func GetConfig() (*Config, error) {
 		Debug:       debug,
 		GithubToken: os.Getenv("GITHUB_TOKEN"),
 		Port:        port,
+		Bot: BotConfig{
+			SentryDSN: botsSentryDSN,
+		},
 		Stream: StreamConfig{
 			NetworkName:        networkName,
 			NatsURL:            natsURL,

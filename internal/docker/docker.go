@@ -97,6 +97,7 @@ func (c *Client) RunContainer(cfg *config.Config, imageName, containerName, cust
 			"NATS_URL=" + cfg.Stream.NatsURL,
 			"EVENTS_STREAM_NAME=" + cfg.Stream.EventStreamName,
 			"FINDINGS_STREAM_NAME=" + cfg.Stream.FindingsStreamName,
+			"SENTRY_DSN=" + cfg.Bot.SentryDSN,
 			"CUSTOMER_NAME=" + customerName,
 			"BOT_NAME=" + botName,
 		},
