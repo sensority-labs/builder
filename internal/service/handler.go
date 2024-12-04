@@ -14,7 +14,7 @@ import (
 	"github.com/sensority-labs/builder/internal/docker"
 )
 
-func buildWatchman(cradlePath string, cfg *config.Config) http.HandlerFunc {
+func startBot(cradlePath string, cfg *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		botName := r.PathValue("botName")
 		customerName := r.PathValue("customerName")
@@ -68,7 +68,7 @@ func buildWatchman(cradlePath string, cfg *config.Config) http.HandlerFunc {
 		}
 
 		// Extract the tar.gz file
-		if err := extractWatchmanSourceCode(cradlePath, tempFile.Name()); err != nil {
+		if err := extractBotSourceCode(cradlePath, tempFile.Name()); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -116,25 +116,25 @@ func buildWatchman(cradlePath string, cfg *config.Config) http.HandlerFunc {
 	}
 }
 
-func extractWatchmanSourceCode(cradlePath, tempFile string) error {
+func extractBotSourceCode(cradlePath, tempFile string) error {
 	var errb bytes.Buffer
-	// Create a directory for the watchman
-	watchmanPath := cradlePath + "/watchman"
-	if _, err := os.Stat(watchmanPath); os.IsNotExist(err) {
-		if err := os.Mkdir(watchmanPath, 0755); err != nil {
+	// Create a directory for the bot
+	botPath := cradlePath + "/bot"
+	if _, err := os.Stat(botPath); os.IsNotExist(err) {
+		if err := os.Mkdir(botPath, 0755); err != nil {
 			return err
 		}
 	} else {
-		if err := os.RemoveAll(watchmanPath); err != nil {
+		if err := os.RemoveAll(botPath); err != nil {
 			return err
 		}
-		if err := os.Mkdir(watchmanPath, 0755); err != nil {
+		if err := os.Mkdir(botPath, 0755); err != nil {
 			return err
 		}
 	}
 
 	// Extract the tar.gz file
-	extractCmd := exec.Command("tar", "-xvzf", tempFile, "-C", watchmanPath)
+	extractCmd := exec.Command("tar", "-xvzf", tempFile, "-C", botPath)
 	extractCmd.Stderr = &errb
 	if _, err := extractCmd.Output(); err != nil {
 		fmt.Println(errb.String())

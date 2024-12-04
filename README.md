@@ -1,4 +1,4 @@
-Watchman builder
+Bot builder
 
 # Installation
 To work with private repos you need to allow them:
@@ -31,5 +31,5 @@ GITHUB_TOKEN=12345 bot-builder
 
 With custom settings:
 ```bash
-GITHUB_TOKEN=12345 NETWORK_NAME=watchman-builder-network NATS_URL=nats://localhost:4222 bot-builder
+GITHUB_TOKEN=12345 NETWORK_NAME=my-network NATS_URL=nats://localhost:4222 bot-builder
 ```
