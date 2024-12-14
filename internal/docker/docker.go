@@ -36,6 +36,52 @@ func (c *Client) Close() error {
 	return nil
 }
 
+type BotContainer struct {
+	docker *Client
+	ID     string
+}
+
+func NewBotContainer(id string) (*BotContainer, error) {
+	cl, err := NewClient()
+	if err != nil {
+		return nil, err
+	}
+
+	return &BotContainer{
+		docker: cl,
+		ID:     id,
+	}, nil
+
+}
+
+func (bc *BotContainer) Close() error {
+	if err := bc.docker.Close(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (bc *BotContainer) Start() error {
+	if err := bc.docker.cl.ContainerStart(context.Background(), bc.ID, container.StartOptions{}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (bc *BotContainer) Stop() error {
+	if err := bc.docker.cl.ContainerStop(context.Background(), bc.ID, container.StopOptions{}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (bc *BotContainer) Remove() error {
+	if err := bc.docker.cl.ContainerRemove(context.Background(), bc.ID, container.RemoveOptions{Force: true}); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (c *Client) BuildImage(srcCodePath, imageName string) error {
 	log.Default().Printf("Building image %s\n", imageName)
 

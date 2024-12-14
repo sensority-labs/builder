@@ -14,7 +14,91 @@ import (
 	"github.com/sensority-labs/builder/internal/docker"
 )
 
-func startBot(cradlePath string, cfg *config.Config) http.HandlerFunc {
+func startBot() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		containerId := r.PathValue("containerId")
+
+		bc, err := docker.NewBotContainer(containerId)
+		if err != nil {
+			log.Default().Println(fmt.Sprintf("Error: %+v", err))
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer func(bc *docker.BotContainer) {
+			if err := bc.Close(); err != nil {
+				log.Default().Println(fmt.Sprintf("Error: %+v", err))
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}(bc)
+
+		if err := bc.Start(); err != nil {
+			log.Default().Println(fmt.Sprintf("Error: %+v", err))
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		log.Default().Println("Container started with ID: ", containerId)
+	}
+}
+
+func stopBot() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		containerId := r.PathValue("containerId")
+
+		bc, err := docker.NewBotContainer(containerId)
+		if err != nil {
+			log.Default().Println(fmt.Sprintf("Error: %+v", err))
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer func(bc *docker.BotContainer) {
+			if err := bc.Close(); err != nil {
+				log.Default().Println(fmt.Sprintf("Error: %+v", err))
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}(bc)
+
+		if err := bc.Stop(); err != nil {
+			log.Default().Println(fmt.Sprintf("Error: %+v", err))
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		log.Default().Println("Container stopped with ID: ", containerId)
+	}
+}
+
+func removeBot() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		containerId := r.PathValue("containerId")
+
+		bc, err := docker.NewBotContainer(containerId)
+		if err != nil {
+			log.Default().Println(fmt.Sprintf("Error: %+v", err))
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer func(bc *docker.BotContainer) {
+			if err := bc.Close(); err != nil {
+				log.Default().Println(fmt.Sprintf("Error: %+v", err))
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}(bc)
+
+		if err := bc.Remove(); err != nil {
+			log.Default().Println(fmt.Sprintf("Error: %+v", err))
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		log.Default().Println("Container removed with ID: ", containerId)
+	}
+}
+
+func makeBot(cradlePath string, cfg *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		botName := r.PathValue("botName")
 		customerName := r.PathValue("customerName")
