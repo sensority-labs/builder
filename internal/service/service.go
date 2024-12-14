@@ -40,6 +40,7 @@ func getCradle(cradlePath, ghToken string) error {
 func Run(cfg *config.Config) error {
 	// Setup server
 	http.HandleFunc("/build/{customerName}/{botName}", makeBot(cfg))
+	http.HandleFunc("/{containerId}/status", botStatus())
 	http.HandleFunc("/{containerId}/start", startBot())
 	http.HandleFunc("/{containerId}/stop", stopBot())
 	http.HandleFunc("/{containerId}/remove", removeBot())

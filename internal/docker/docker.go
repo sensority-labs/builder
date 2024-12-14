@@ -61,6 +61,14 @@ func (bc *BotContainer) Close() error {
 	return nil
 }
 
+func (bc *BotContainer) Status() (string, error) {
+	stats, err := bc.docker.cl.ContainerInspect(context.Background(), bc.ID)
+	if err != nil {
+		return "", err
+	}
+	return stats.State.Status, nil
+}
+
 func (bc *BotContainer) Start() error {
 	if err := bc.docker.cl.ContainerStart(context.Background(), bc.ID, container.StartOptions{}); err != nil {
 		return err

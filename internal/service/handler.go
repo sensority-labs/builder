@@ -2,6 +2,7 @@ package service
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -96,6 +97,45 @@ func removeBot() http.HandlerFunc {
 		}
 
 		log.Default().Println("Container removed with ID: ", containerId)
+	}
+}
+
+func botStatus() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		containerId := r.PathValue("containerId")
+
+		bc, err := docker.NewBotContainer(containerId)
+		if err != nil {
+			log.Default().Println(fmt.Sprintf("Error: %+v", err))
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer func(bc *docker.BotContainer) {
+			if err := bc.Close(); err != nil {
+				log.Default().Println(fmt.Sprintf("Error: %+v", err))
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}(bc)
+
+		status, err := bc.Status()
+		if err != nil {
+			log.Default().Println(fmt.Sprintf("Error: %+v", err))
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		statusResponse := struct {
+			Status string `json:"status"`
+		}{
+			Status: status,
+		}
+
+		if err := json.NewEncoder(w).Encode(statusResponse); err != nil {
+			log.Default().Println(fmt.Sprintf("Error: %+v", err))
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 }
 
