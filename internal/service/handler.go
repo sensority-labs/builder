@@ -20,7 +20,7 @@ func startBot() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		containerId := r.PathValue("containerId")
 
-		bc, err := docker.NewBotContainer(containerId)
+		bc, err := docker.GetBotContainer(containerId)
 		if err != nil {
 			log.Default().Println(fmt.Sprintf("Error: %+v", err))
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -48,7 +48,7 @@ func stopBot() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		containerId := r.PathValue("containerId")
 
-		bc, err := docker.NewBotContainer(containerId)
+		bc, err := docker.GetBotContainer(containerId)
 		if err != nil {
 			log.Default().Println(fmt.Sprintf("Error: %+v", err))
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -76,7 +76,7 @@ func removeBot() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		containerId := r.PathValue("containerId")
 
-		bc, err := docker.NewBotContainer(containerId)
+		bc, err := docker.GetBotContainer(containerId)
 		if err != nil {
 			log.Default().Println(fmt.Sprintf("Error: %+v", err))
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -104,7 +104,7 @@ func botStatus() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		containerId := r.PathValue("containerId")
 
-		bc, err := docker.NewBotContainer(containerId)
+		bc, err := docker.GetBotContainer(containerId)
 		if err != nil {
 			log.Default().Println(fmt.Sprintf("Error: %+v", err))
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -200,7 +200,7 @@ func makeBot(cfg *config.Config) http.HandlerFunc {
 			return
 		}
 
-		// Extract the tar.gz file
+		// Extract the tar.gz file to the cradle directory
 		if err := extractBotSourceCode(cradlePath, tempFile.Name()); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -208,40 +208,45 @@ func makeBot(cfg *config.Config) http.HandlerFunc {
 
 		log.Default().Println("Bot code extracted. Building docker image...")
 
-		dc, err := docker.NewClient()
+		bc, err := docker.NewBotContainer(cfg, botName, customerName)
 		if err != nil {
 			log.Default().Println(fmt.Sprintf("Error: %+v", err))
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		defer func(dockerClient *docker.Client) {
-			if err := dockerClient.Close(); err != nil {
+		defer func(bc *docker.BotContainer) {
+			if err := bc.Close(); err != nil {
 				log.Default().Println(fmt.Sprintf("Error: %+v", err))
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-		}(dc)
+		}(bc)
 
-		// Build the cradle with a docker client
-		imageName := botName + ":latest"
-		if err := dc.BuildImage(cradlePath, imageName); err != nil {
-			log.Default().Println(fmt.Sprintf("Error building image: %+v", err))
+		log.Default().Println("Building the bot image...")
+		if err := bc.Build(cradlePath); err != nil {
+			log.Default().Println(fmt.Sprintf("Error: %+v", err))
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		containerName := botName // We'll define a proper container name later
-		containerId, err := dc.RunContainer(cfg, imageName, containerName, customerName, botName)
-		if err != nil {
-			log.Default().Println(fmt.Sprintf("Error running container: %+v", err))
+		log.Default().Println("Bot image built. Creating container...")
+		if err := bc.Create(); err != nil {
+			log.Default().Println(fmt.Sprintf("Error: %+v", err))
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		log.Default().Println("Container started with ID: ", containerId)
+		log.Default().Printf("Container created with ID: %s\nStarting...", bc.ID)
+		if err := bc.Start(); err != nil {
+			log.Default().Println(fmt.Sprintf("Error: %+v", err))
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		log.Default().Println("Container started")
 
 		// Return the container ID
-		if _, err := fmt.Fprintf(w, containerId); err != nil {
+		if _, err := fmt.Fprintf(w, bc.ID); err != nil {
 			log.Default().Println(fmt.Sprintf("Error: %+v", err))
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

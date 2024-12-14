@@ -37,12 +37,46 @@ func (c *Client) Close() error {
 }
 
 type BotContainer struct {
-	docker *Client
-	ID     string
+	docker  *Client
+	ID      string
+	Name    string
+	Image   string
+	Network string
+	Envs    []string
 }
 
-func NewBotContainer(id string) (*BotContainer, error) {
+func NewBotContainer(cfg *config.Config, botName, customerName string) (*BotContainer, error) {
 	cl, err := NewClient()
+	if err != nil {
+		return nil, err
+	}
+
+	imageName := fmt.Sprintf("@%s/%s:latest", customerName, botName)
+	containerName := fmt.Sprintf("@%s/%s", customerName, botName)
+
+	return &BotContainer{
+		docker:  cl,
+		Name:    containerName,
+		Image:   imageName,
+		Network: cfg.Stream.NetworkName,
+		Envs: []string{
+			"NATS_URL=" + cfg.Stream.NatsURL,
+			"EVENTS_STREAM_NAME=" + cfg.Stream.EventStreamName,
+			"FINDINGS_STREAM_NAME=" + cfg.Stream.FindingsStreamName,
+			"SENTRY_DSN=" + cfg.Bot.SentryDSN,
+			"CUSTOMER_NAME=" + customerName,
+			"BOT_NAME=" + botName,
+		},
+	}, nil
+}
+
+func GetBotContainer(id string) (*BotContainer, error) {
+	cl, err := NewClient()
+	if err != nil {
+		return nil, err
+	}
+
+	containerStats, err := cl.cl.ContainerInspect(context.Background(), id)
 	if err != nil {
 		return nil, err
 	}
@@ -50,6 +84,9 @@ func NewBotContainer(id string) (*BotContainer, error) {
 	return &BotContainer{
 		docker: cl,
 		ID:     id,
+		Name:   containerStats.Name,
+		Image:  containerStats.Config.Image,
+		Envs:   containerStats.Config.Env,
 	}, nil
 
 }
@@ -87,6 +124,38 @@ func (bc *BotContainer) Remove() error {
 	if err := bc.docker.cl.ContainerRemove(context.Background(), bc.ID, container.RemoveOptions{Force: true}); err != nil {
 		return err
 	}
+	return nil
+}
+
+func (bc *BotContainer) Recreate() error {
+	if err := bc.Stop(); err != nil {
+		return err
+	}
+	if err := bc.Remove(); err != nil {
+		return err
+	}
+	if err := bc.Create(); err != nil {
+		return err
+	}
+	if err := bc.Start(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (bc *BotContainer) Build(srcCodePath string) error {
+	if err := bc.docker.BuildImage(srcCodePath, bc.Image); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (bc *BotContainer) Create() error {
+	containerId, err := bc.docker.CreateContainer(bc.Image, bc.Name, bc.Network, bc.Envs)
+	if err != nil {
+		return err
+	}
+	bc.ID = containerId
 	return nil
 }
 
@@ -128,7 +197,7 @@ func (c *Client) BuildImage(srcCodePath, imageName string) error {
 	return nil
 }
 
-func (c *Client) RunContainer(cfg *config.Config, imageName, containerName, customerName, botName string) (string, error) {
+func (c *Client) CreateContainer(imageName, containerName, networkName string, envs []string) (string, error) {
 	// Check if a container already exists
 	containers, err := c.cl.ContainerList(context.Background(), container.ListOptions{All: true})
 	if err != nil {
@@ -147,14 +216,7 @@ func (c *Client) RunContainer(cfg *config.Config, imageName, containerName, cust
 	// Create a new container
 	containerConfig := &container.Config{
 		Image: imageName,
-		Env: []string{
-			"NATS_URL=" + cfg.Stream.NatsURL,
-			"EVENTS_STREAM_NAME=" + cfg.Stream.EventStreamName,
-			"FINDINGS_STREAM_NAME=" + cfg.Stream.FindingsStreamName,
-			"SENTRY_DSN=" + cfg.Bot.SentryDSN,
-			"CUSTOMER_NAME=" + customerName,
-			"BOT_NAME=" + botName,
-		},
+		Env:   envs,
 	}
 	// HostConfig is used to configure the container to be attached to the network
 	hostConfig := &container.HostConfig{
@@ -165,18 +227,12 @@ func (c *Client) RunContainer(cfg *config.Config, imageName, containerName, cust
 	// Attach the container to the network
 	networkConfig := &network.NetworkingConfig{
 		EndpointsConfig: map[string]*network.EndpointSettings{
-			cfg.Stream.NetworkName: {},
+			networkName: {},
 		},
 	}
 	log.Default().Printf("Creating container %s from image: %s\n", containerName, imageName)
 	cnt, err := c.cl.ContainerCreate(context.Background(), containerConfig, hostConfig, networkConfig, nil, containerName)
 	if err != nil {
-		return "", err
-	}
-
-	// Start the container
-	log.Default().Printf("Starting container %s\n", containerName)
-	if err := c.cl.ContainerStart(context.Background(), cnt.ID, container.StartOptions{}); err != nil {
 		return "", err
 	}
 
