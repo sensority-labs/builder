@@ -100,6 +100,34 @@ func removeBot() http.HandlerFunc {
 	}
 }
 
+func recreateBot() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		containerId := r.PathValue("containerId")
+
+		bc, err := docker.GetBotContainer(containerId)
+		if err != nil {
+			log.Default().Println(fmt.Sprintf("Error: %+v", err))
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer func(bc *docker.BotContainer) {
+			if err := bc.Close(); err != nil {
+				log.Default().Println(fmt.Sprintf("Error: %+v", err))
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}(bc)
+
+		if err := bc.Recreate(); err != nil {
+			log.Default().Println(fmt.Sprintf("Error: %+v", err))
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		log.Default().Printf("Container recreated\n oldID: %s\n New ID: %s", containerId, bc.ID)
+	}
+}
+
 func botStatus() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		containerId := r.PathValue("containerId")
