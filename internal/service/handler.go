@@ -124,7 +124,7 @@ func recreateBot() http.HandlerFunc {
 			return
 		}
 
-		log.Default().Printf("Container recreated\n oldID: %s\n New ID: %s", containerId, bc.ID)
+		log.Default().Printf("Container recreated\n Old ID: %s\n New ID: %s", containerId, bc.ID)
 
 		response := struct {
 			ContainerID string `json:"containerId"`

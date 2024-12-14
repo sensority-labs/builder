@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"regexp"
 	"slices"
+	"strings"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -45,14 +47,28 @@ type BotContainer struct {
 	Envs    []string
 }
 
+// Slugify converts a string to a slug with allowed characters [a-zA-Z0-9_.-].
+func sanitize(input string) string {
+	// Replace all non-alphanumeric characters (excluding _, ., -) with a hyphen.
+	re := regexp.MustCompile(`[^a-zA-Z0-9_.-]+`)
+	slug := re.ReplaceAllString(input, "-")
+
+	// Remove leading or trailing hyphens.
+	slug = strings.Trim(slug, "-")
+
+	return slug
+}
+
 func NewBotContainer(cfg *config.Config, botName, customerName string) (*BotContainer, error) {
 	cl, err := NewClient()
 	if err != nil {
 		return nil, err
 	}
 
-	imageName := fmt.Sprintf("@%s/%s:latest", customerName, botName)
-	containerName := fmt.Sprintf("@%s/%s", customerName, botName)
+	customerName = sanitize(customerName)
+	botName = sanitize(botName)
+	imageName := fmt.Sprintf("%s_%s:latest", customerName, botName)
+	containerName := fmt.Sprintf("%s_%s", customerName, botName)
 
 	return &BotContainer{
 		docker:  cl,
@@ -81,12 +97,18 @@ func GetBotContainer(id string) (*BotContainer, error) {
 		return nil, err
 	}
 
+	var networkNames []string
+	for k := range containerStats.NetworkSettings.Networks {
+		networkNames = append(networkNames, k)
+	}
+
 	return &BotContainer{
-		docker: cl,
-		ID:     id,
-		Name:   containerStats.Name,
-		Image:  containerStats.Config.Image,
-		Envs:   containerStats.Config.Env,
+		docker:  cl,
+		ID:      id,
+		Name:    strings.TrimPrefix(containerStats.Name, "/"),
+		Image:   containerStats.Config.Image,
+		Envs:    containerStats.Config.Env,
+		Network: networkNames[0],
 	}, nil
 
 }
@@ -128,18 +150,23 @@ func (bc *BotContainer) Remove() error {
 }
 
 func (bc *BotContainer) Recreate() error {
+	log.Default().Printf("Recreating container %s\n", bc.Name)
 	if err := bc.Stop(); err != nil {
 		return err
 	}
+	log.Default().Printf("Container %s stopped\n", bc.Name)
 	if err := bc.Remove(); err != nil {
 		return err
 	}
+	log.Default().Printf("Container %s removed\n", bc.Name)
 	if err := bc.Create(); err != nil {
 		return err
 	}
+	log.Default().Printf("Container %s created\n", bc.Name)
 	if err := bc.Start(); err != nil {
 		return err
 	}
+	log.Default().Printf("Container %s started\n", bc.Name)
 	return nil
 }
 
