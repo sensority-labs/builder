@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path"
 
 	"github.com/sensority-labs/builder/internal/config"
 	"github.com/sensority-labs/builder/internal/docker"
@@ -98,8 +99,16 @@ func removeBot() http.HandlerFunc {
 	}
 }
 
-func makeBot(cradlePath string, cfg *config.Config) http.HandlerFunc {
+func makeBot(cfg *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		tmpDir := os.TempDir()
+		cradlePath := path.Join(tmpDir, "cradle-ts")
+
+		if err := getCradle(cradlePath, cfg.GithubToken); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
 		botName := r.PathValue("botName")
 		customerName := r.PathValue("customerName")
 

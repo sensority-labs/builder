@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"path"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/sensority-labs/builder/internal/config"
@@ -39,14 +38,8 @@ func getCradle(cradlePath, ghToken string) error {
 }
 
 func Run(cfg *config.Config) error {
-	tmpDir := os.TempDir()
-	cradlePath := path.Join(tmpDir, "cradle-ts")
-	if err := getCradle(cradlePath, cfg.GithubToken); err != nil {
-		return err
-	}
-
 	// Setup server
-	http.HandleFunc("/build/{customerName}/{botName}", makeBot(cradlePath, cfg))
+	http.HandleFunc("/build/{customerName}/{botName}", makeBot(cfg))
 	http.HandleFunc("/{containerId}/start", startBot())
 	http.HandleFunc("/{containerId}/stop", stopBot())
 	http.HandleFunc("/{containerId}/remove", removeBot())
