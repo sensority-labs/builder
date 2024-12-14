@@ -125,6 +125,19 @@ func recreateBot() http.HandlerFunc {
 		}
 
 		log.Default().Printf("Container recreated\n oldID: %s\n New ID: %s", containerId, bc.ID)
+
+		response := struct {
+			ContainerID string `json:"containerId"`
+		}{
+			ContainerID: bc.ID,
+		}
+
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			log.Default().Println(fmt.Sprintf("Error: %+v", err))
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
 	}
 }
 
