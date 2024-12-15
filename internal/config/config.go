@@ -21,7 +21,8 @@ type StreamConfig struct {
 }
 
 type BotConfig struct {
-	SentryDSN string
+	SentryDSN  string
+	JsonRpcUrl string
 }
 
 func GetConfig() (*Config, error) {
@@ -44,6 +45,7 @@ func GetConfig() (*Config, error) {
 		port = "5005"
 	}
 	botsSentryDSN := os.Getenv("BOTS_SENTRY_DSN")
+	botJsonRpcUrl := os.Getenv("BOT_JSON_RPC_URL")
 
 	eventStreamName := os.Getenv("EVENT_STREAM_NAME")
 	if eventStreamName == "" {
@@ -59,7 +61,8 @@ func GetConfig() (*Config, error) {
 		GithubToken: os.Getenv("GITHUB_TOKEN"),
 		Port:        port,
 		Bot: BotConfig{
-			SentryDSN: botsSentryDSN,
+			SentryDSN:  botsSentryDSN,
+			JsonRpcUrl: botJsonRpcUrl,
 		},
 		Stream: StreamConfig{
 			NetworkName:        networkName,

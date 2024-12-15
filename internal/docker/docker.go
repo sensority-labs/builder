@@ -80,6 +80,7 @@ func NewBotContainer(cfg *config.Config, botName, customerName string) (*BotCont
 			"EVENTS_STREAM_NAME=" + cfg.Stream.EventStreamName,
 			"FINDINGS_STREAM_NAME=" + cfg.Stream.FindingsStreamName,
 			"SENTRY_DSN=" + cfg.Bot.SentryDSN,
+			"JSON_RPC_URL=" + cfg.Bot.JsonRpcUrl,
 			"CUSTOMER_NAME=" + customerName,
 			"BOT_NAME=" + botName,
 		},
