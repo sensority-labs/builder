@@ -29,10 +29,10 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push fork image
+      - name: Build and push image
         uses: docker/build-push-action@v6.1.0
         with:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ghcr.io/sensority-labs/bot-builder:latest
+          tags: ghcr.io/sensority-labs/botman:latest

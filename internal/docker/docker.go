@@ -15,6 +15,7 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/archive"
+	"github.com/sensority-labs/builder/internal/bot"
 	"github.com/sensority-labs/builder/internal/config"
 )
 
@@ -69,21 +70,30 @@ func NewBotContainer(cfg *config.Config, botName, customerName string) (*BotCont
 	botName = sanitize(botName)
 	imageName := fmt.Sprintf("%s_%s:latest", customerName, botName)
 	containerName := fmt.Sprintf("%s_%s", customerName, botName)
+	envs := []string{
+		"NATS_URL=" + cfg.Stream.NatsURL,
+		"EVENTS_STREAM_NAME=" + cfg.Stream.EventStreamName,
+		"FINDINGS_STREAM_NAME=" + cfg.Stream.FindingsStreamName,
+		"SENTRY_DSN=" + cfg.Bot.SentryDSN,
+		"CUSTOMER_NAME=" + customerName,
+		"BOT_NAME=" + botName,
+	}
+
+	botCfg, err := bot.GetBotConfig(cfg, customerName, botName)
+	if err != nil {
+		return nil, err
+	}
+
+	for k, v := range botCfg.Envs {
+		envs = append(envs, fmt.Sprintf("%s=%s", k, v))
+	}
 
 	return &BotContainer{
 		docker:  cl,
 		Name:    containerName,
 		Image:   imageName,
-		Network: cfg.Stream.NetworkName,
-		Envs: []string{
-			"NATS_URL=" + cfg.Stream.NatsURL,
-			"EVENTS_STREAM_NAME=" + cfg.Stream.EventStreamName,
-			"FINDINGS_STREAM_NAME=" + cfg.Stream.FindingsStreamName,
-			"SENTRY_DSN=" + cfg.Bot.SentryDSN,
-			"JSON_RPC_URL=" + cfg.Bot.JsonRpcUrl,
-			"CUSTOMER_NAME=" + customerName,
-			"BOT_NAME=" + botName,
-		},
+		Network: cfg.NetworkName,
+		Envs:    envs,
 	}, nil
 }
 

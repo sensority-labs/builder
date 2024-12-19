@@ -1,74 +1,40 @@
 package config
 
 import (
-	"fmt"
-	"os"
+	"github.com/cristalhq/aconfig"
 )
 
 type Config struct {
-	Debug       bool
-	GithubToken string
-	Port        string
-	Bot         BotConfig
-	Stream      StreamConfig
+	Debug          bool   `default:"false"`
+	GithubToken    string `required:"true"`
+	Port           string `default:"5005"`
+	CoreURL        string `default:"http://core:8000"`
+	ApiAccessToken string `required:"true"`
+	NetworkName    string `default:"sensority-labs"`
+	Bot            BotConfig
+	Stream         StreamConfig
 }
 
 type StreamConfig struct {
-	NetworkName        string
-	NatsURL            string
-	EventStreamName    string
-	FindingsStreamName string
+	NatsURL            string `default:"nats://nats:4222"`
+	EventStreamName    string `default:"ethereum_events"`
+	FindingsStreamName string `default:"findings"`
 }
 
 type BotConfig struct {
-	SentryDSN  string
-	JsonRpcUrl string
+	SentryDSN string
 }
 
 func GetConfig() (*Config, error) {
-	debug := os.Getenv("DEBUG") == "true"
+	var cfg Config
+	loader := aconfig.LoaderFor(&cfg, aconfig.Config{
+		AllowUnknownFlags: true,
+		SkipFlags:         true,
+	})
 
-	githubToken := os.Getenv("GITHUB_TOKEN")
-	if githubToken == "" {
-		return nil, fmt.Errorf("GITHUB_TOKEN is not set")
-	}
-	networkName := os.Getenv("NETWORK_NAME")
-	if networkName == "" {
-		networkName = "sensority-labs"
-	}
-	natsURL := os.Getenv("NATS_URL")
-	if natsURL == "" {
-		natsURL = "nats://nats:4222"
-	}
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "5005"
-	}
-	botsSentryDSN := os.Getenv("BOTS_SENTRY_DSN")
-	botJsonRpcUrl := os.Getenv("BOT_JSON_RPC_URL")
-
-	eventStreamName := os.Getenv("EVENT_STREAM_NAME")
-	if eventStreamName == "" {
-		eventStreamName = "ethereum_events"
-	}
-	findingsStreamName := os.Getenv("FINDINGS_STREAM_NAME")
-	if findingsStreamName == "" {
-		findingsStreamName = "findings"
+	if err := loader.Load(); err != nil {
+		return nil, err
 	}
 
-	return &Config{
-		Debug:       debug,
-		GithubToken: os.Getenv("GITHUB_TOKEN"),
-		Port:        port,
-		Bot: BotConfig{
-			SentryDSN:  botsSentryDSN,
-			JsonRpcUrl: botJsonRpcUrl,
-		},
-		Stream: StreamConfig{
-			NetworkName:        networkName,
-			NatsURL:            natsURL,
-			EventStreamName:    eventStreamName,
-			FindingsStreamName: findingsStreamName,
-		},
-	}, nil
+	return &cfg, nil
 }
