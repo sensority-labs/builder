@@ -79,15 +79,6 @@ func NewBotContainer(cfg *config.Config, botName, customerName string) (*BotCont
 		"BOT_NAME=" + botName,
 	}
 
-	botCfg, err := bot.GetConfig(cfg, customerName, botName)
-	if err != nil {
-		return nil, err
-	}
-
-	for k, v := range botCfg.Envs {
-		envs = append(envs, fmt.Sprintf("%s=%s", k, v))
-	}
-
 	return &BotContainer{
 		docker:  cl,
 		Name:    containerName,
@@ -160,16 +151,50 @@ func (bc *BotContainer) Remove() error {
 	return nil
 }
 
+func (bc *BotContainer) UpdateEnvs(cfg *config.Config) error {
+	var botCustomerName, botName string
+	for _, env := range bc.Envs {
+		if strings.HasPrefix(env, "CUSTOMER_NAME=") {
+			botCustomerName = strings.TrimPrefix(env, "CUSTOMER_NAME=")
+		}
+		if strings.HasPrefix(env, "BOT_NAME=") {
+			botName = strings.TrimPrefix(env, "BOT_NAME=")
+		}
+	}
+	if botCustomerName == "" || botName == "" {
+		return fmt.Errorf("missing bot customer name or bot name in the envs. Redeploy the bot")
+	}
+
+	botCfg, err := bot.GetConfig(cfg, botCustomerName, botName)
+	if err != nil {
+		return err
+	}
+
+	for k, v := range botCfg.Envs {
+		env := fmt.Sprintf("%s=%s", k, v)
+		if !slices.Contains(bc.Envs, env) {
+			bc.Envs = append(bc.Envs, env)
+		} else {
+			for i, e := range bc.Envs {
+				if strings.HasPrefix(e, k+"=") {
+					bc.Envs[i] = env
+				}
+			}
+		}
+	}
+	return nil
+}
+
 func (bc *BotContainer) Recreate() error {
 	log.Default().Printf("Recreating container %s\n", bc.Name)
 	if err := bc.Stop(); err != nil {
 		return err
 	}
-	log.Default().Printf("Container %s stopped\n", bc.Name)
+	log.Default().Printf("Container %s stopped\nRemoving...", bc.Name)
 	if err := bc.Remove(); err != nil {
 		return err
 	}
-	log.Default().Printf("Container %s removed\n", bc.Name)
+	log.Default().Printf("Container removed\nCreating container...")
 	if err := bc.Create(); err != nil {
 		return err
 	}

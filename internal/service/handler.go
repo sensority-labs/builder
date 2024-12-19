@@ -101,7 +101,7 @@ func removeBot() http.HandlerFunc {
 	}
 }
 
-func recreateBot() http.HandlerFunc {
+func recreateBot(cfg *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		containerId := r.PathValue("containerId")
 
@@ -118,6 +118,13 @@ func recreateBot() http.HandlerFunc {
 				return
 			}
 		}(bc)
+
+		log.Default().Printf("Updating envs for container %s", containerId)
+		if err := bc.UpdateEnvs(cfg); err != nil {
+			log.Default().Println(fmt.Sprintf("Error: %+v", err))
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
 		if err := bc.Recreate(); err != nil {
 			log.Default().Println(fmt.Sprintf("Error: %+v", err))
@@ -271,7 +278,14 @@ func makeBot(cfg *config.Config) http.HandlerFunc {
 			return
 		}
 
-		log.Default().Println("Bot image built. Creating container...")
+		log.Default().Println("Bot image built. Updating bot envs...")
+		if err := bc.UpdateEnvs(cfg); err != nil {
+			log.Default().Println(fmt.Sprintf("Error: %+v", err))
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		log.Default().Println("Envs updated. Creating the container...")
 		if err := bc.Create(); err != nil {
 			log.Default().Println(fmt.Sprintf("Error: %+v", err))
 			http.Error(w, err.Error(), http.StatusInternalServerError)
