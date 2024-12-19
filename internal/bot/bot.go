@@ -19,6 +19,8 @@ func GetConfig(cfg *config.Config, userName, botName string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Token", cfg.ApiAccessToken)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -62,6 +64,7 @@ func UpdateID(cfg *config.Config, userName, botName, containerID string) error {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Token", cfg.ApiAccessToken)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
