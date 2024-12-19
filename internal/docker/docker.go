@@ -79,7 +79,7 @@ func NewBotContainer(cfg *config.Config, botName, customerName string) (*BotCont
 		"BOT_NAME=" + botName,
 	}
 
-	botCfg, err := bot.GetBotConfig(cfg, customerName, botName)
+	botCfg, err := bot.GetConfig(cfg, customerName, botName)
 	if err != nil {
 		return nil, err
 	}

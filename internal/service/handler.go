@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path"
 
+	"github.com/sensority-labs/builder/internal/bot"
 	"github.com/sensority-labs/builder/internal/config"
 	"github.com/sensority-labs/builder/internal/docker"
 )
@@ -285,6 +286,13 @@ func makeBot(cfg *config.Config) http.HandlerFunc {
 		}
 
 		log.Default().Println("Container started")
+
+		// Update the bot ID in the core
+		if err := bot.UpdateID(cfg, customerName, botName, bc.ID); err != nil {
+			log.Default().Println(fmt.Sprintf("Error: %+v", err))
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
 		// Return the container ID
 		if _, err := fmt.Fprintf(w, bc.ID); err != nil {
