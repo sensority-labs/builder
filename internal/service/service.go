@@ -43,7 +43,7 @@ func Run(cfg *config.Config) error {
 	http.HandleFunc("/{containerId}/start", startBot())
 	http.HandleFunc("/{containerId}/stop", stopBot())
 	http.HandleFunc("/{containerId}/status", botStatus())
-	http.HandleFunc("/{containerId}/recreate", recreateBot())
+	http.HandleFunc("/{containerId}/recreate", recreateBot(cfg))
 	http.HandleFunc("/{containerId}/remove", removeBot())
 
 	// Start the server
