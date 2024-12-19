@@ -59,7 +59,7 @@ func UpdateID(cfg *config.Config, userName, botName, containerID string) error {
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/customers/set-bot-container-id", cfg.CoreURL), bytes.NewReader(payloadBytes))
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/customers/set-bot-container-id/", cfg.CoreURL), bytes.NewReader(payloadBytes))
 	if err != nil {
 		return err
 	}
